@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Free">
+	
+	<insert id="insertFree" parameterType="freeVO" useGeneratedKeys="true">
+		<selectKey keyProperty="freeNo" resultType="int" order="BEFORE">
+			select seq_free.nextval from dual
+		</selectKey>
+		insert into free
+			(FREE_NO, FREE_TITLE, FREE_CONTENT, FREE_WRITER, FREE_DATE)
+		values(
+			#{freeNo}, #{freeTitle}, #{freeContent}, #{freeWriter}, sysdate
+		)
+	</insert>
+	
+	<update id="incresementFreeHit" parameterType="int">
+		update free
+		set
+			free_hit = free_hit + 1
+		where free_no = #{freeNo}
+	</update>
+	
+	<select id="selectFree" parameterType="int" resultType="freeVO">
+		select
+			FREE_NO, FREE_TITLE, FREE_CONTENT, FREE_WRITER, FREE_DATE, free_hit
+		from free
+		where free_no = #{freeNo}
+	</select>
+	
+	<delete id="deleteFree">
+		delete from free
+		where free_no = #{freeNo}
+	</delete>
+	
+	<update id="updateFree" parameterType="freeVO">
+		update free
+		set
+			FREE_TITLE = #{freeTitle},
+			FREE_CONTENT = #{freeContent},
+			FREE_DATE = sysdate,
+			free_hit = 1
+		where free_no = #{freeNo}
+	</update>
+	
+	<sql id="freeSearch">
+		<if test="searchType != null and searchType == 'title'">
+			and (free_title like '%'||#{searchWord}||'%' )
+		</if>
+		<if test="searchType != null and searchType == 'writer'">
+			and (free_ writer like '%'||#{searchWord}||'%' )
+		</if>
+	</sql>
+	
+	<select id="selectFreeCount" parameterType="paginationInfoVO" resultType="int">
+		select count(free_no)
+		from free
+		where 1=1
+		<include refid="freeSearch" />
+	</select>
+	
+	<select id="selectFreeList" parameterType="paginationInfoVO" resultType="freeVO">
+		select
+			b.*
+		from (
+			select
+				a.*, row_number() over(order by a.free_no desc) rnum
+			from (
+				select
+				free_no, free_title, free_writer, free_date, free_hit
+				from free
+				where 1=1
+				<include refid="freeSearch" />
+				order by free_no desc
+			)a
+		)b
+		<![CDATA[
+		where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+	
+	<select id="selectFreeList_" resultType="freeVO">
+		select *
+		from (
+		    select
+		            free_no, free_title, free_date
+		    from free
+		    where 1=1
+		    order by free_no desc)
+		where rownum between 1 and 5
+	</select>
+	
+</mapper>
